@@ -1,0 +1,38 @@
+# Конфигурация для Fly.io
+# Документация: https://fly.io/docs/reference/configuration/
+
+app = "edinitsa-p2p"
+primary_region = "fra"  # Франкфурт (ближе к России)
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 250
+    soft_limit = 200
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 3000
+  
+  [[services.ports]]
+    port = 3000
+    handlers = ["tls"]
+    
+  [[services.tcp_checks]]
+    interval = "10s"
+    timeout = "2s"
+    grace_period = "30s"
+
+[vm]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256
