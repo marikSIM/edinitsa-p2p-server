@@ -71,6 +71,10 @@ public interface ChatDao {
     @Query("UPDATE chats SET unreadCount = 0 WHERE id = :chatId")
     void resetUnreadCount(long chatId);
 
+    // Увеличить счётчик непрочитанных
+    @Query("UPDATE chats SET unreadCount = unreadCount + 1 WHERE id = :chatId")
+    void incrementUnreadCount(long chatId);
+
     // Получить чат по userId друга
     @Query("SELECT * FROM chats WHERE friendUserId = :friendUserId LIMIT 1")
     ChatEntity getChatByFriendUserIdSync(String friendUserId);

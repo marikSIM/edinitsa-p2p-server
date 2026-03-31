@@ -46,6 +46,8 @@ public class SearchActivity extends AppCompatActivity implements ContactAdapter.
     private P2PClient p2pClient;
     private ExecutorService executorService;
     private Handler handler = new Handler(Looper.getMainLooper());
+    
+    private List<ContactAdapter.ContactItem> inAppContacts = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +60,7 @@ public class SearchActivity extends AppCompatActivity implements ContactAdapter.
         initViews();
         setupAdapter();
         setupListeners();
+        setupP2PListener(); // Добавляем слушателя P2P
         loadContacts();
     }
 
@@ -87,14 +90,93 @@ public class SearchActivity extends AppCompatActivity implements ContactAdapter.
             @Override public void afterTextChanged(android.text.Editable s) {}
         });
     }
+    
+    private void setupP2PListener() {
+        p2pClient.addEventListener(new P2PClient.P2PEventListener() {
+            @Override
+            public void onContactsSynced(List<JSONObject> matches) {
+                handler.post(() -> {
+                    try {
+                        inAppContacts.clear();
+                        for (JSONObject match : matches) {
+                            ContactAdapter.ContactItem item = ContactAdapter.ContactItem.fromJSON(match);
+                            if (item != null) {
+                                inAppContacts.add(item);
+                            }
+                        }
+                        
+                        // Обновляем все контакты, добавляя userId найденным
+                        updateContactsMatches();
+                        
+                        progressBar.setVisibility(View.GONE);
+                        filterResults("");
+                        
+                        if (inAppContacts.isEmpty()) {
+                            emptyStateText.setText("Контакты синхронизированы, но никого нет в приложении");
+                        } else {
+                            emptyStateText.setText("Найдено " + inAppContacts.size() + " контактов в приложении!");
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
+            
+            @Override public void onConnected(String userId) {}
+            @Override public void onDisconnected() {}
+            @Override public void onMessageReceived(String from, JSONObject payload) {}
+            @Override public void onUserFound(String userId, boolean online) {}
+            @Override public void onTyping(String from) {}
+            @Override public void onMessageDelivered(String to, String messageId) {}
+            @Override public void onWebRTCOffer(String from, JSONObject payload) {}
+            @Override public void onWebRTCAnswer(String from, JSONObject payload) {}
+            @Override public void onWebRTCIceCandidate(String from, JSONObject payload) {}
+            @Override public void onError(String error) {}
+            @Override public void onPhoneRegistered(String userId, boolean alreadyRegistered) {}
+        });
+    }
+    
+    /**
+     * Обновляет allContacts, добавляя userId из inAppContacts
+     */
+    private void updateContactsMatches() {
+        // Создаём карту найденных контактов по нормализованному номеру
+        java.util.Map<String, ContactAdapter.ContactItem> inAppMap = new java.util.HashMap<>();
+        for (ContactAdapter.ContactItem item : inAppContacts) {
+            String normalizedPhone = normalizePhone(item.phone);
+            inAppMap.put(normalizedPhone, item);
+        }
+        
+        // Обновляем все контакты
+        for (int i = 0; i < allContacts.size(); i++) {
+            ContactAdapter.ContactItem contact = allContacts.get(i);
+            String normalizedPhone = normalizePhone(contact.phone);
+            ContactAdapter.ContactItem inAppContact = inAppMap.get(normalizedPhone);
+            
+            if (inAppContact != null) {
+                // Заменяем на контакт с userId
+                allContacts.set(i, inAppContact);
+            }
+        }
+    }
+    
+    private String normalizePhone(String phone) {
+        if (phone == null) return "";
+        String digits = phone.replaceAll("\\D", "");
+        if (digits.startsWith("8") && digits.length() == 11) {
+            return "7" + digits.substring(1);
+        }
+        return digits;
+    }
 
     private void loadContacts() {
         progressBar.setVisibility(View.VISIBLE);
+        emptyStateText.setText("Чтение контактов...");
 
         executorService.execute(() -> {
             try {
                 List<JSONObject> contacts = ContactHelper.getContactsAsJSON(this);
-                
+
                 handler.post(() -> {
                     allContacts.clear();
                     for (JSONObject contact : contacts) {
@@ -107,13 +189,17 @@ public class SearchActivity extends AppCompatActivity implements ContactAdapter.
                         }
                     }
 
+                    emptyStateText.setText("Отправка на сервер...");
+                    
                     // Проверяем кто в приложении
                     if (p2pClient != null && p2pClient.isConnected()) {
                         p2pClient.syncContacts(contacts);
+                        // filterResults вызовется после получения matches в setupP2PListener
+                    } else {
+                        progressBar.setVisibility(View.GONE);
+                        emptyStateText.setText("Нет подключения к серверу");
+                        filterResults("");
                     }
-
-                    progressBar.setVisibility(View.GONE);
-                    filterResults("");
                 });
             } catch (Exception e) {
                 handler.post(() -> {
@@ -172,12 +258,58 @@ public class SearchActivity extends AppCompatActivity implements ContactAdapter.
     }
 
     private void openChat(ContactAdapter.ContactItem contact) {
-        Intent intent = new Intent(this, P2PChatActivity.class);
-        intent.putExtra("user_id", contact.userId);
-        intent.putExtra("chat_name", contact.name);
-        intent.putExtra("is_online", contact.isOnline);
-        startActivity(intent);
-        finish();
+        if (contact.userId == null || contact.userId.isEmpty()) {
+            Toast.makeText(this, "Пользователь не найден в приложении", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // Создаём или находим чат в базе данных
+        executorService.execute(() -> {
+            try {
+                com.example.simplechat.data.AppDatabase database = 
+                    com.example.simplechat.data.AppDatabase.getInstance(this);
+                
+                // Проверяем, есть ли уже чат с этим userId
+                com.example.simplechat.data.ChatEntity existingChat = 
+                    database.chatDao().getChatByFriendUserIdSync(contact.userId);
+                
+                long chatId;
+                if (existingChat != null) {
+                    chatId = existingChat.getId();
+                } else {
+                    // Создаём новый чат
+                    com.example.simplechat.data.ChatEntity newChat = 
+                        new com.example.simplechat.data.ChatEntity(
+                            System.currentTimeMillis(),
+                            contact.name,
+                            "👤",
+                            "Напишите сообщение...",
+                            System.currentTimeMillis(),
+                            contact.isOnline,
+                            0,
+                            contact.userId
+                        );
+                    database.chatDao().insert(newChat);
+                    chatId = newChat.getId();
+                }
+                
+                // Открываем чат
+                handler.post(() -> {
+                    Intent intent = new Intent(this, P2PChatActivity.class);
+                    intent.putExtra("chat_id", chatId);
+                    intent.putExtra("friend_user_id", contact.userId);
+                    intent.putExtra("chat_name", contact.name);
+                    intent.putExtra("is_online", contact.isOnline);
+                    startActivity(intent);
+                    finish();
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                handler.post(() -> 
+                    Toast.makeText(this, "Ошибка: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                );
+            }
+        });
     }
 
     private void showInviteDialog(ContactAdapter.ContactItem contact) {

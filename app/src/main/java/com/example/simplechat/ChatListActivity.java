@@ -514,7 +514,46 @@ public class ChatListActivity extends AppCompatActivity implements ChatAdapter.O
 
     @Override
     public void onMessageReceived(String from, JSONObject payload) {
-        Toast.makeText(this, "Сообщение от " + from, Toast.LENGTH_SHORT).show();
+        // Ищем чат с этим userId
+        executorService.execute(() -> {
+            try {
+                ChatEntity chat = database.chatDao().getChatByFriendUserIdSync(from);
+                if (chat != null) {
+                    // Обновляем последнее сообщение
+                    String text = payload.optString("text", "Новое сообщение");
+                    database.chatDao().updateLastMessage(chat.getId(), text, System.currentTimeMillis());
+                    
+                    // Увеличиваем счётчик непрочитанных
+                    database.chatDao().incrementUnreadCount(chat.getId());
+                    
+                    handler.post(() -> {
+                        // Обновляем UI
+                        loadChatsFromDatabase();
+                        Toast.makeText(this, "📨 Сообщение от " + from.substring(0, 8), Toast.LENGTH_SHORT).show();
+                    });
+                } else {
+                    // Чат не найден - создаём новый
+                    ChatEntity newChat = new ChatEntity(
+                        System.currentTimeMillis(),
+                        "P2P: " + from.substring(0, 8),
+                        "👤",
+                        payload.optString("text", "Новое сообщение"),
+                        System.currentTimeMillis(),
+                        true,
+                        1,
+                        from
+                    );
+                    database.chatDao().insert(newChat);
+                    
+                    handler.post(() -> {
+                        loadChatsFromDatabase();
+                        Toast.makeText(this, "📨 Новое сообщение!", Toast.LENGTH_SHORT).show();
+                    });
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     @Override

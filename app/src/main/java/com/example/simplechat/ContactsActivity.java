@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.simplechat.p2p.P2PClient;
 import com.example.simplechat.utils.ContactHelper;
+import com.example.simplechat.data.AppDatabase;
 
 import org.json.JSONObject;
 
@@ -57,6 +58,7 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
     private ImageButton backButton;
 
     private P2PClient p2pClient;
+    private AppDatabase database;
     private ExecutorService executorService;
     private Handler handler = new Handler(Looper.getMainLooper());
 
@@ -79,6 +81,7 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
         }
 
         // Инициализация
+        database = AppDatabase.getInstance(this);
         executorService = Executors.newSingleThreadExecutor();
         
         // Получаем P2PClient из синглтона
@@ -154,21 +157,38 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
             public void onContactsSynced(List<JSONObject> matches) {
                 handler.post(() -> {
                     try {
+                        Log.d(TAG, "📥 Получено совпадений: " + matches.size());
+                        
                         inAppContacts.clear();
                         for (JSONObject match : matches) {
                             ContactAdapter.ContactItem item = ContactAdapter.ContactItem.fromJSON(match);
                             if (item != null) {
                                 inAppContacts.add(item);
+                                Log.d(TAG, "✅ Контакт в приложении: " + item.name + " (userId: " + item.userId + ")");
                             }
                         }
-                        List<ContactAdapter.ContactItem> mergedContacts = mergeContacts(allContacts, inAppContacts);
+                        
+                        // Объединяем все контакты с найденными userId
+                        List<ContactAdapter.ContactItem> mergedContacts = mergeContactsWithMatches(allContacts, inAppContacts);
                         contactAdapter.setContacts(mergedContacts);
                         updateStats(mergedContacts);
+                        
                         progressBar.setVisibility(View.GONE);
                         emptyState.setVisibility(mergedContacts.isEmpty() ? View.VISIBLE : View.GONE);
-                        statusText.setText("Синхронизировано: " + inAppContacts.size() + " в приложении");
+                        statusText.setText("Найдено: " + inAppContacts.size() + " в приложении из " + allContacts.size());
+                        
+                        if (inAppContacts.isEmpty()) {
+                            Toast.makeText(ContactsActivity.this, 
+                                "Контакты синхронизированы, но никого из контактов нет в приложении", 
+                                Toast.LENGTH_LONG).show();
+                        } else {
+                            Toast.makeText(ContactsActivity.this, 
+                                "🎉 Найдено " + inAppContacts.size() + " контактов в приложении!", 
+                                Toast.LENGTH_LONG).show();
+                        }
                     } catch (Exception e) {
                         Log.e(TAG, "Ошибка обработки контактов", e);
+                        Toast.makeText(ContactsActivity.this, "Ошибка: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -211,30 +231,39 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
         });
     }
 
-    private List<ContactAdapter.ContactItem> mergeContacts(
+    /**
+     * Объединяет все контакты с найденными (у которых есть userId)
+     */
+    private List<ContactAdapter.ContactItem> mergeContactsWithMatches(
             List<ContactAdapter.ContactItem> allContacts,
             List<ContactAdapter.ContactItem> inAppContacts) {
 
         List<ContactAdapter.ContactItem> result = new ArrayList<>();
+        
+        // Создаём карту найденных контактов по нормализованному номеру
         java.util.Map<String, ContactAdapter.ContactItem> inAppMap = new java.util.HashMap<>();
         for (ContactAdapter.ContactItem item : inAppContacts) {
             String normalizedPhone = normalizePhone(item.phone);
             inAppMap.put(normalizedPhone, item);
         }
 
+        // Для каждого контакта из телефонной книги
         for (ContactAdapter.ContactItem contact : allContacts) {
             String normalizedPhone = normalizePhone(contact.phone);
             ContactAdapter.ContactItem inAppContact = inAppMap.get(normalizedPhone);
 
             if (inAppContact != null) {
+                // Нашли совпадение - используем данные из inAppContact (с userId)
                 result.add(inAppContact);
             } else {
+                // Не нашли - добавляем как обычный контакт (без userId)
                 ContactAdapter.ContactItem newItem = new ContactAdapter.ContactItem(
                     contact.name, contact.phone, null, false, false
                 );
                 result.add(newItem);
             }
         }
+        
         return result;
     }
 
@@ -375,11 +404,54 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
     }
 
     private void openChat(ContactAdapter.ContactItem contact) {
-        Intent intent = new Intent(this, P2PChatActivity.class);
-        intent.putExtra("user_id", contact.userId);
-        intent.putExtra("chat_name", contact.name);
-        intent.putExtra("is_online", contact.isOnline);
-        startActivity(intent);
+        if (contact.userId == null || contact.userId.isEmpty()) {
+            Toast.makeText(this, "Пользователь не найден в приложении", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // Создаём или находим чат в базе данных
+        executorService.execute(() -> {
+            try {
+                // Проверяем, есть ли уже чат с этим userId
+                com.example.simplechat.data.ChatEntity existingChat = 
+                    database.chatDao().getChatByFriendUserIdSync(contact.userId);
+                
+                long chatId;
+                if (existingChat != null) {
+                    chatId = existingChat.getId();
+                } else {
+                    // Создаём новый чат
+                    com.example.simplechat.data.ChatEntity newChat = 
+                        new com.example.simplechat.data.ChatEntity(
+                            System.currentTimeMillis(),
+                            contact.name,
+                            "👤",
+                            "Напишите сообщение...",
+                            System.currentTimeMillis(),
+                            contact.isOnline,
+                            0,
+                            contact.userId
+                        );
+                    database.chatDao().insert(newChat);
+                    chatId = newChat.getId();
+                }
+                
+                // Открываем чат
+                handler.post(() -> {
+                    Intent intent = new Intent(this, P2PChatActivity.class);
+                    intent.putExtra("chat_id", chatId);
+                    intent.putExtra("friend_user_id", contact.userId);
+                    intent.putExtra("chat_name", contact.name);
+                    intent.putExtra("is_online", contact.isOnline);
+                    startActivity(intent);
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                handler.post(() -> 
+                    Toast.makeText(this, "Ошибка: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                );
+            }
+        });
     }
 
     private void showInviteDialog(ContactAdapter.ContactItem contact) {
