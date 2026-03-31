@@ -6,14 +6,14 @@ WORKDIR /app
 
 # Копируем package.json и устанавливаем зависимости
 COPY package.json ./
-RUN npm ci --only=production
+RUN npm install --only=production
 
 # Копируем сервер
-COPY server.js ./
+COPY server-render.js ./
 
 # Порты
 EXPOSE 3000
 EXPOSE 3001
 
 # Запуск сервера
-CMD ["node", "server.js"]
+CMD ["node", "server-render.js"]
