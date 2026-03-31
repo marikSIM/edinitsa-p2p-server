@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ЕДИНИЦА</string>
+    <string name="chats">💬 Чаты</string>
+    <string name="message_hint">Сообщение...</string>
+    <string name="send">➤</string>
+    <string name="enter_message">Введите сообщение</string>
+    <string name="online">онлайн</string>
+    <string name="welcome_message">Добро пожаловать в ЕДИНИЦА! 👋</string>
+    
+    <!-- Контакты -->
+    <string name="contacts">📞 Контакты</string>
+    <string name="sync_contacts">Синхронизировать контакты</string>
+    <string name="register_phone">Привязать номер</string>
+    <string name="invite_contact">Пригласить</string>
+    <string name="write_message">Написать</string>
+    <string name="in_app">в приложении</string>
+    <string name="total_contacts">Всего</string>
+    <string name="online_contacts">Онлайн</string>
+</resources>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <!-- Профиль -->
+        <item
+            android:id="@+id/nav_profile"
+            android:icon="@drawable/ic_person"
+            android:title="Профиль" />
+
+        <!-- Контакты -->
+        <item
+            android:id="@+id/nav_contacts"
+            android:icon="@drawable/ic_contacts"
+            android:title="Контакты" />
+
+        <!-- Группы -->
+        <item
+            android:id="@+id/nav_groups"
+            android:icon="@drawable/ic_groups"
+            android:title="Группы" />
+
+        <!-- Избранное -->
+        <item
+            android:id="@+id/nav_favorites"
+            android:icon="@drawable/ic_favorite"
+            android:title="Избранное" />
+    </group>
+
+    <item android:title="Настройки">
+        <group>
+            <!-- Настройки -->
+            <item
+                android:id="@+id/nav_settings"
+                android:icon="@drawable/ic_settings"
+                android:title="Настройки" />
+
+            <!-- Поддержка -->
+            <item
+                android:id="@+id/nav_support"
+                android:icon="@drawable/ic_person"
+                android:title="Поддержка" />
+
+            <!-- Очистить историю -->
+            <item
+                android:id="@+id/nav_clear_history"
+                android:icon="@drawable/ic_clear_history"
+                android:title="Очистить историю" />
+        </group>
+    </item>
+
+</menu>

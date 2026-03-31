@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="176dp"
+    android:background="@color/telegram_blue"
+    android:gravity="bottom"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:theme="@style/ThemeOverlay.AppCompat.Dark">
+
+    <!-- Аватар пользователя -->
+    <TextView
+        android:id="@+id/navUserAvatar"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:background="@drawable/nav_avatar_background"
+        android:gravity="center"
+        android:textSize="32sp"
+        tools:text="👤" />
+
+    <!-- Имя пользователя -->
+    <TextView
+        android:id="@+id/navUserName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        tools:text="Пользователь" />
+
+    <!-- Статус -->
+    <TextView
+        android:id="@+id/navUserStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:alpha="0.8"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"
+        tools:text="онлайн" />
+
+</LinearLayout>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SimpleChat" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@color/telegram_blue</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="colorPrimary">@color/telegram_blue</item>
+        <item name="colorPrimaryDark">@color/telegram_blue_dark</item>
+        <item name="colorAccent">@color/telegram_blue</item>
+    </style>
+</resources>
