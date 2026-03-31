@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Разрешаем доступ к загрузкам для установки APK -->
+    <external-path
+        name="downloads"
+        path="Download" />
+    
+    <!-- Доступ к внутреннему хранилищу -->
+    <files-path
+        name="internal_files"
+        path="." />
+    
+    <!-- Доступ к кэшу -->
+    <cache-path
+        name="cache"
+        path="." />
+    
+    <!-- Доступ к внешнему хранилищу -->
+    <external-files-path
+        name="external_files"
+        path="." />
+    
+    <external-cache-path
+        name="external_cache"
+        path="." />
+</paths>

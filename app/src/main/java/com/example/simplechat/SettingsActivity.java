@@ -1,6 +1,9 @@
 package com.example.simplechat;
 
+import android.Manifest;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -8,6 +11,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.example.simplechat.data.AppDatabase;
 import com.example.simplechat.data.UserProfileEntity;
@@ -28,6 +33,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private int clickCount = 0;
     private static final int ADMIN_CLICK_COUNT = 5;
+    private static final int PERMISSION_REQUEST_CODE = 200;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,11 +101,24 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Разрешение получено - продолжаем обновление
+                updateManager.checkForUpdatesForced();
+            } else {
+                Toast.makeText(this, "Разрешение необходимо для установки обновлений", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         // Сбрасываем счётчик кликов
         clickCount = 0;
-        
+
         // Проверяем обновления при входе в настройки
         updateManager.checkForUpdates();
     }
