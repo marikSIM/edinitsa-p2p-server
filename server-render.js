@@ -20,12 +20,16 @@ app.use(cors());
 app.use(express.json());
 
 // Хранилище подключённых пользователей
-// Map<userId, { lastSeen: number, online: boolean }>
+// Map<userId, { lastSeen: number, online: boolean, phone?: string }>
 const users = new Map();
 
 // Очередь сообщений для офлайн-пользователей
 // Map<userId, Array<message>>
 const offlineQueue = new Map();
+
+// Хранилище привязки телефонных номеров к userId
+// Map<normalizedPhone, userId>
+const phoneToUser = new Map();
 
 // Статистика
 const stats = {
@@ -33,6 +37,21 @@ const stats = {
   totalMessages: 0,
   startTime: Date.now()
 };
+
+/**
+ * Нормализация номера телефона
+ * Удаляет всё кроме цифр и +, убирает ведущий +
+ */
+function normalizePhone(phone) {
+  if (!phone) return null;
+  // Удаляем всё кроме цифр
+  const digits = phone.replace(/\D/g, '');
+  // Если начинается с 8, заменяем на 7 (для РФ/Казахстана)
+  if (digits.startsWith('8') && digits.length === 11) {
+    return '7' + digits.slice(1);
+  }
+  return digits;
+}
 
 // ============================================
 // API Endpoints
@@ -43,14 +62,128 @@ app.post('/register', (req, res) => {
   const userId = uuidv4();
   users.set(userId, { lastSeen: Date.now(), online: true });
   stats.connectedUsers = users.size;
-  
+
   console.log(`📱 Новый пользователь: ${userId}`);
-  
+
   res.json({
     type: 'connected',
     userId: userId,
     message: 'Подключено к серверу сигнализации'
   });
+});
+
+// Привязка номера телефона к userId
+app.post('/register-phone', (req, res) => {
+  const { userId, phone } = req.body;
+
+  if (!userId || !phone) {
+    return res.status(400).json({ error: 'userId и phone обязательны' });
+  }
+
+  const normalizedPhone = normalizePhone(phone);
+  
+  // Проверяем, есть ли уже пользователь с таким номером
+  const existingUser = phoneToUser.get(normalizedPhone);
+  if (existingUser) {
+    console.log(`📞 Номер ${normalizedPhone} уже привязан к ${existingUser}`);
+    // Возвращаем существующего userId (номер уже зарегистрирован)
+    return res.json({
+      success: true,
+      userId: existingUser,
+      alreadyRegistered: true,
+      message: 'Номер уже зарегистрирован'
+    });
+  }
+
+  // Привязываем номер к userId
+  phoneToUser.set(normalizedPhone, userId);
+  
+  // Обновляем запись пользователя
+  if (users.has(userId)) {
+    users.get(userId).phone = normalizedPhone;
+  }
+
+  console.log(`📞 Номер ${normalizedPhone} привязан к ${userId}`);
+
+  res.json({
+    success: true,
+    userId: userId,
+    alreadyRegistered: false,
+    message: 'Номер успешно привязан'
+  });
+});
+
+// Синхронизация контактов
+app.post('/sync-contacts', (req, res) => {
+  const { userId, contacts } = req.body;
+
+  if (!userId || !contacts || !Array.isArray(contacts)) {
+    return res.status(400).json({ error: 'userId и contacts обязательны' });
+  }
+
+  const matches = [];
+
+  // Проверяем каждый контакт
+  for (const contact of contacts) {
+    const normalizedPhone = normalizePhone(contact.phone);
+    if (!normalizedPhone) continue;
+
+    const foundUserId = phoneToUser.get(normalizedPhone);
+    
+    if (foundUserId && foundUserId !== userId) {
+      // Нашли совпадение - получаем информацию о пользователе
+      const userInfo = users.get(foundUserId);
+      matches.push({
+        name: contact.name,
+        phone: contact.phone,
+        userId: foundUserId,
+        displayName: userInfo?.displayName || contact.name,
+        online: userInfo?.online || false
+      });
+    }
+  }
+
+  console.log(`🔄 Синхронизация для ${userId}: найдено ${matches.length} контактов`);
+
+  res.json({
+    success: true,
+    matches: matches,
+    totalContacts: contacts.length,
+    foundCount: matches.length
+  });
+});
+
+// Поиск пользователя по номеру телефона
+app.post('/find-by-phone', (req, res) => {
+  const { phone } = req.body;
+
+  if (!phone) {
+    return res.status(400).json({ error: 'phone обязателен' });
+  }
+
+  const normalizedPhone = normalizePhone(phone);
+  const foundUserId = phoneToUser.get(normalizedPhone);
+
+  if (foundUserId) {
+    const userInfo = users.get(foundUserId);
+    const isOnline = userInfo?.online && (Date.now() - userInfo.lastSeen < 30000);
+
+    console.log(`🔍 Найден пользователь ${foundUserId} по номеру ${normalizedPhone}`);
+
+    res.json({
+      found: true,
+      userId: foundUserId,
+      displayName: userInfo?.displayName || null,
+      online: isOnline
+    });
+  } else {
+    console.log(`🔍 Номер ${normalizedPhone} не найден`);
+
+    res.json({
+      found: false,
+      message: 'Пользователь с таким номером не найден'
+    });
+  }
 });
 
 // Heartbeat (обновление статуса)
@@ -210,12 +343,13 @@ app.get('/stats', (req, res) => {
       onlineCount++;
     }
   });
-  
+
   res.json({
     connectedUsers: onlineCount,
     totalMessages: stats.totalMessages,
     uptime: Math.floor((Date.now() - stats.startTime) / 1000),
-    offlineQueues: offlineQueue.size
+    offlineQueues: offlineQueue.size,
+    registeredPhones: phoneToUser.size
   });
 });
 
