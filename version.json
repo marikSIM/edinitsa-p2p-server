@@ -1,0 +1,6 @@
+{
+  "version_code": 3,
+  "version_name": "1.2",
+  "message": "🆕 Новая версия!\n\nИзменения:\n• Исправлена синхронизация контактов\n• Теперь пользователи могут находить друг друга по номеру телефона\n• Автоматическая загрузка и установка обновлений\n• Улучшена стабильность P2P соединения",
+  "download_url": "https://github.com/marikSIM/edinitsa-p2p-server/releases/download/v1.2/app-debug.apk"
+}
