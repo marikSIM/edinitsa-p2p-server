@@ -44,10 +44,10 @@ public class P2PClient {
 
     // URL сервера сигнализации
     // ДЛЯ РАЗРАБОТКИ - локальный сервер (HTTP):
-    private static final String SERVER_URL = "http://10.0.2.2:3000";
+    // private static final String SERVER_URL = "http://10.0.2.2:3000";
     
     // ДЛЯ ПРОДАКШЕНА - Render.com (HTTPS):
-    // private static final String SERVER_URL = "https://edinitsa-p2p-server.onrender.com";
+    private static final String SERVER_URL = "https://edinitsa-p2p-server.onrender.com";
 
     private final OkHttpClient httpClient;
     private final Handler handler;
