@@ -129,17 +129,22 @@ app.post('/sync-contacts', (req, res) => {
     if (!normalizedPhone) continue;
 
     const foundUserId = phoneToUser.get(normalizedPhone);
-    
+
     if (foundUserId && foundUserId !== userId) {
       // Нашли совпадение - получаем информацию о пользователе
       const userInfo = users.get(foundUserId);
+      const isOnline = userInfo?.online && (Date.now() - userInfo.lastSeen < 30000);
+      
       matches.push({
         name: contact.name,
         phone: contact.phone,
         userId: foundUserId,
         displayName: userInfo?.displayName || contact.name,
-        online: userInfo?.online || false
+        online: isOnline || false,
+        normalizedPhone: normalizedPhone // Добавляем для отладки
       });
+      
+      console.log(`✅ Найдено совпадение: ${contact.name} (${normalizedPhone}) -> ${foundUserId}`);
     }
   }
 
@@ -174,7 +179,8 @@ app.post('/find-by-phone', (req, res) => {
       found: true,
       userId: foundUserId,
       displayName: userInfo?.displayName || null,
-      online: isOnline
+      online: isOnline,
+      phone: phone // Возвращаем оригинальный номер
     });
   } else {
     console.log(`🔍 Номер ${normalizedPhone} не найден`);
@@ -183,6 +189,26 @@ app.post('/find-by-phone', (req, res) => {
       found: false,
       message: 'Пользователь с таким номером не найден'
     });
+  }
+});
+
+// Поиск пользователя по номеру телефона (упрощённая версия для быстрого поиска)
+app.get('/find-by-phone/:phone', (req, res) => {
+  const phone = req.params.phone;
+  const normalizedPhone = normalizePhone(phone);
+  const foundUserId = phoneToUser.get(normalizedPhone);
+
+  if (foundUserId) {
+    const userInfo = users.get(foundUserId);
+    const isOnline = userInfo?.online && (Date.now() - userInfo.lastSeen < 30000);
+
+    res.json({
+      found: true,
+      userId: foundUserId,
+      online: isOnline
+    });
+  } else {
+    res.json({ found: false });
   }
 });
 
