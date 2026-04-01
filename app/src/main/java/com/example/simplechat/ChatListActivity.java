@@ -146,6 +146,10 @@ public class ChatListActivity extends AppCompatActivity
             getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
 
+        // Кнопка меню
+        ImageButton menuButton = findViewById(R.id.menuButton);
+        menuButton.setOnClickListener(v -> showMainMenu());
+
         // Нижнее меню (как в Telegram)
         bottomNavigation.setSelectedItemId(R.id.nav_chats);
         bottomNavigation.setOnItemSelectedListener(item -> {
@@ -169,6 +173,74 @@ public class ChatListActivity extends AppCompatActivity
             }
             
             return false;
+        });
+    }
+
+    /**
+     * Главное меню (как в Telegram)
+     */
+    private void showMainMenu() {
+        String[] options = {
+            "👤 Профиль",
+            "📞 Контакты",
+            "👥 Группы",
+            "⭐ Избранное",
+            "⚙️ Настройки",
+            "🎧 Поддержка",
+            "🗑️ Очистить историю"
+        };
+        
+        new AlertDialog.Builder(this)
+            .setTitle("Меню")
+            .setItems(options, (dialog, which) -> {
+                if (which == 0) {
+                    // Профиль
+                    openProfile();
+                } else if (which == 1) {
+                    // Контакты
+                    startActivity(new Intent(this, ContactsActivity.class));
+                } else if (which == 2) {
+                    // Группы
+                    startActivity(new Intent(this, MyGroupsActivity.class));
+                } else if (which == 3) {
+                    // Избранное
+                    Toast.makeText(this, "Избранное (в разработке)", Toast.LENGTH_SHORT).show();
+                } else if (which == 4) {
+                    // Настройки
+                    startActivity(new Intent(this, SettingsActivity.class));
+                } else if (which == 5) {
+                    // Поддержка
+                    startActivity(new Intent(this, SupportChatActivity.class));
+                } else if (which == 6) {
+                    // Очистить историю
+                    showClearHistoryDialog();
+                }
+            })
+            .show();
+    }
+
+    private void openProfile() {
+        Intent intent = new Intent(this, ProfileActivity.class);
+        startActivity(intent);
+    }
+
+    private void showClearHistoryDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Очистить историю")
+                .setMessage("Вы уверены, что хотите удалить все чаты и сообщения? Это действие нельзя отменить.")
+                .setPositiveButton("Удалить", (dialog, which) -> clearAllHistory())
+                .setNegativeButton("Отмена", null)
+                .show();
+    }
+
+    private void clearAllHistory() {
+        executorService.execute(() -> {
+            database.clearAllData();
+            handler.post(() -> {
+                chatList.clear();
+                chatAdapter.notifyDataSetChanged();
+                Toast.makeText(this, "История очищена", Toast.LENGTH_SHORT).show();
+            });
         });
     }
 
