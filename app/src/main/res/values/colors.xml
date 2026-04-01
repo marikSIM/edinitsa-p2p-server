@@ -18,4 +18,12 @@
     <color name="divider">#E5E5E5</color>
     <color name="input_background">#FFFFFF</color>
     <color name="chat_bubble_in">#E8E8E8</color>
+    
+    <!-- Bottom Navigation -->
+    <color name="bottom_nav_selected">#3390EC</color>
+    <color name="bottom_nav_unselected">#999999</color>
+    
+    <!-- Message statuses -->
+    <color name="message_sent">#EEFFDE</color>
+    <color name="message_received">#FFFFFF</color>
 </resources>

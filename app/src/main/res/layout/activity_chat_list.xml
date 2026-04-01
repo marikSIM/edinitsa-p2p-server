@@ -1,169 +1,143 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background">
 
     <!-- Основной контент -->
-    <androidx.coordinatorlayout.widget.CoordinatorLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
+        <!-- Toolbar -->
         <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <LinearLayout
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/telegram_blue"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="4dp"
-                android:paddingTop="8dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="8dp">
+                android:layout_height="?attr/actionBarSize"
+                android:background="@color/telegram_blue">
 
-                <!-- Кнопка меню -->
-                <ImageButton
-                    android:id="@+id/menuButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Меню"
-                    android:src="@drawable/ic_menu"
-                    app:tint="@color/white" />
-
-                <!-- Заголовок -->
-                <LinearLayout
-                    android:layout_width="0dp"
+                <TextView
+                    android:id="@+id/toolbarTitle"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    android:orientation="vertical">
+                    android:text="ЕДИНИЦА"
+                    android:textColor="@color/white"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/chats"
-                        android:textColor="@color/white"
-                        android:textSize="24sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/connectionStatusText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Подключение..."
-                        android:textColor="@color/white"
-                        android:alpha="0.8"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <!-- Кнопка поиска -->
+                <!-- Кнопка поиска справа -->
                 <ImageButton
                     android:id="@+id/searchButton"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
+                    android:layout_gravity="end"
+                    android:layout_marginEnd="8dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Поиск"
                     android:src="@drawable/ic_search"
                     app:tint="@color/white" />
-            </LinearLayout>
 
-            <!-- Поисковая строка (скрыта по умолчанию) -->
-            <LinearLayout
-                android:id="@+id/searchBar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/telegram_blue_dark"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="8dp"
-                android:visibility="gone">
+            </androidx.appcompat.widget.Toolbar>
 
-                <EditText
-                    android:id="@+id/searchEditText"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:background="@color/white"
-                    android:hint="Поиск..."
-                    android:inputType="text"
-                    android:maxLines="1"
-                    android:paddingStart="12dp"
-                    android:paddingTop="8dp"
-                    android:paddingEnd="8dp"
-                    android:paddingBottom="8dp"
-                    android:textSize="16sp" />
-
-                <ImageButton
-                    android:id="@+id/closeSearchButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="8dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Закрыть поиск"
-                    android:src="@drawable/ic_close"
-                    app:tint="@color/white" />
-            </LinearLayout>
         </com.google.android.material.appbar.AppBarLayout>
 
+        <!-- Статус подключения P2P -->
+        <TextView
+            android:id="@+id/connectionStatusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#F0F0F0"
+            android:padding="8dp"
+            android:text="Нет подключения"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <!-- Поисковая панель -->
+        <LinearLayout
+            android:id="@+id/searchBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/white"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="8dp"
+            android:visibility="gone">
+
+            <EditText
+                android:id="@+id/searchEditText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@color/background"
+                android:hint="Поиск..."
+                android:padding="10dp"
+                android:singleLine="true" />
+
+            <ImageButton
+                android:id="@+id/closeSearchButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Закрыть поиск"
+                android:src="@drawable/ic_close" />
+
+        </LinearLayout>
+
+        <!-- Список чатов -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/chatsRecyclerView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:clipToPadding="false"
-            android:paddingTop="64dp" />
+            android:paddingBottom="8dp" />
 
-        <!-- Кнопка поиска (плавающая) -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/searchFab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="16dp"
-            android:contentDescription="Поиск"
-            android:src="@drawable/ic_search"
-            app:tint="@color/white"
-            app:backgroundTint="@color/telegram_blue" />
+        <!-- Пустой экран -->
+        <TextView
+            android:id="@+id/emptyStateView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="💬 Нет чатов\n\nНажмите + чтобы создать новый"
+            android:textSize="18sp"
+            android:textColor="@color/text_secondary"
+            android:visibility="gone" />
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/newChatButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="16dp"
-            android:layout_marginBottom="80dp"
-            android:contentDescription="Новый чат"
-            android:src="@android:drawable/ic_input_add"
-            app:tint="@color/white"
-            app:backgroundTint="@color/telegram_blue" />
+    </LinearLayout>
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/p2pChatButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|start"
-            android:layout_margin="16dp"
-            android:contentDescription="P2P чат"
-            android:src="@drawable/ic_cloud"
-            app:tint="@color/white"
-            app:backgroundTint="@color/telegram_blue" />
-
-    </androidx.coordinatorlayout.widget.CoordinatorLayout>
-
-    <!-- Боковое меню -->
-    <com.google.android.material.navigation.NavigationView
-        android:id="@+id/nav_view"
+    <!-- Плавающая кнопка создания чата -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/newChatButton"
         android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:layout_gravity="start"
-        android:fitsSystemWindows="true"
-        app:headerLayout="@layout/nav_header_content"
-        app:menu="@menu/menu_drawer" />
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="72dp"
+        android:contentDescription="Новый чат"
+        android:src="@drawable/ic_create"
+        app:backgroundTint="@color/telegram_blue"
+        app:tint="@color/white" />
 
-</androidx.drawerlayout.widget.DrawerLayout>
+    <!-- Нижнее меню (как в Telegram) -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@color/white"
+        android:elevation="8dp"
+        app:menu="@menu/bottom_navigation_menu"
+        app:labelVisibilityMode="labeled"
+        app:itemIconTint="@color/bottom_nav_colors"
+        app:itemTextColor="@color/bottom_nav_colors" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

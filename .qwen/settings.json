@@ -25,7 +25,8 @@
       "Bash(git pull *)",
       "Bash(npm start)",
       "Bash(git remote *)",
-      "Bash(copy *)"
+      "Bash(copy *)",
+      "Bash(ren *)"
     ]
   },
   "$version": 3
