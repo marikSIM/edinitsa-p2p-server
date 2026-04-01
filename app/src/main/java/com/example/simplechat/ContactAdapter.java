@@ -141,19 +141,15 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactV
             // Телефон
             phoneText.setText(contact.phone);
 
-            // Статус
-            if (contact.isInApp) {
+            // Статус - ПРОВЕРЯЕМ userId а не isInApp!
+            if (contact.userId != null && !contact.userId.isEmpty()) {
+                // Пользователь найден в приложении
                 statusIcon.setVisibility(View.VISIBLE);
                 statusIcon.setImageResource(R.drawable.ic_check);
-                
-                if (contact.isOnline) {
-                    actionButton.setVisibility(View.VISIBLE);
-                    actionButton.setText("Написать");
-                } else {
-                    actionButton.setVisibility(View.VISIBLE);
-                    actionButton.setText("Написать");
-                }
+                actionButton.setVisibility(View.VISIBLE);
+                actionButton.setText("Написать");
             } else {
+                // Пользователь не найден - приглашаем
                 statusIcon.setVisibility(View.GONE);
                 actionButton.setVisibility(View.VISIBLE);
                 actionButton.setText("Пригласить");

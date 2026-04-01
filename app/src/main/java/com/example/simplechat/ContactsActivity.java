@@ -233,13 +233,14 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
 
     /**
      * Объединяет все контакты с найденными (у которых есть userId)
+     * И ОБНОВЛЯЕТ allContacts с userId
      */
     private List<ContactAdapter.ContactItem> mergeContactsWithMatches(
             List<ContactAdapter.ContactItem> allContacts,
             List<ContactAdapter.ContactItem> inAppContacts) {
 
         List<ContactAdapter.ContactItem> result = new ArrayList<>();
-        
+
         // Создаём карту найденных контактов по нормализованному номеру
         java.util.Map<String, ContactAdapter.ContactItem> inAppMap = new java.util.HashMap<>();
         for (ContactAdapter.ContactItem item : inAppContacts) {
@@ -248,13 +249,16 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
         }
 
         // Для каждого контакта из телефонной книги
-        for (ContactAdapter.ContactItem contact : allContacts) {
+        for (int i = 0; i < allContacts.size(); i++) {
+            ContactAdapter.ContactItem contact = allContacts.get(i);
             String normalizedPhone = normalizePhone(contact.phone);
             ContactAdapter.ContactItem inAppContact = inAppMap.get(normalizedPhone);
 
             if (inAppContact != null) {
-                // Нашли совпадение - используем данные из inAppContact (с userId)
+                // Нашли совпадение - обновляем allContacts с userId
+                allContacts.set(i, inAppContact);
                 result.add(inAppContact);
+                Log.d(TAG, "🔄 Обновлён контакт: " + contact.name + " userId=" + inAppContact.userId);
             } else {
                 // Не нашли - добавляем как обычный контакт (без userId)
                 ContactAdapter.ContactItem newItem = new ContactAdapter.ContactItem(
@@ -263,7 +267,8 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
                 result.add(newItem);
             }
         }
-        
+
+        Log.d(TAG, "📊 Итого контактов: " + result.size() + ", в приложении: " + inAppContacts.size());
         return result;
     }
 
