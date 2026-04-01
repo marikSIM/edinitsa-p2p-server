@@ -413,24 +413,32 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
             Toast.makeText(this, "Пользователь не найден в приложении", Toast.LENGTH_SHORT).show();
             return;
         }
-        
+
         // Создаём или находим чат в базе данных
         executorService.execute(() -> {
             try {
                 // Проверяем, есть ли уже чат с этим userId
-                com.example.simplechat.data.ChatEntity existingChat = 
+                com.example.simplechat.data.ChatEntity existingChat =
                     database.chatDao().getChatByFriendUserIdSync(contact.userId);
-                
+
                 long chatId;
                 if (existingChat != null) {
                     chatId = existingChat.getId();
                 } else {
+                    // Получаем аватар пользователя из БД
+                    String userAvatar = "👤"; // По умолчанию
+                    com.example.simplechat.data.UserProfileEntity userProfile =
+                        database.userProfileDao().getProfile();
+                    if (userProfile != null && userProfile.getAvatar() != null) {
+                        userAvatar = userProfile.getAvatar();
+                    }
+                    
                     // Создаём новый чат
-                    com.example.simplechat.data.ChatEntity newChat = 
+                    com.example.simplechat.data.ChatEntity newChat =
                         new com.example.simplechat.data.ChatEntity(
                             System.currentTimeMillis(),
                             contact.name,
-                            "👤",
+                            userAvatar, // Аватар из профиля пользователя
                             "Напишите сообщение...",
                             System.currentTimeMillis(),
                             contact.isOnline,
@@ -440,7 +448,7 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
                     database.chatDao().insert(newChat);
                     chatId = newChat.getId();
                 }
-                
+
                 // Открываем чат
                 handler.post(() -> {
                     Intent intent = new Intent(this, P2PChatActivity.class);
@@ -452,7 +460,7 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
                 });
             } catch (Exception e) {
                 e.printStackTrace();
-                handler.post(() -> 
+                handler.post(() ->
                     Toast.makeText(this, "Ошибка: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
             }
