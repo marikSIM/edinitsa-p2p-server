@@ -55,8 +55,8 @@ public class UpdateManager {
         "https://raw.githubusercontent.com/marikSIM/edinitsa-p2p-server/main/version.json";
 
     // Текущая версия (увеличивайте при каждом обновлении!)
-    private static final int CURRENT_VERSION_CODE = 3;
-    private static final String CURRENT_VERSION_NAME = "1.2";
+    private static final int CURRENT_VERSION_CODE = 4;
+    private static final String CURRENT_VERSION_NAME = "1.3";
 
     private static final int PERMISSION_REQUEST_CODE = 200;
 
