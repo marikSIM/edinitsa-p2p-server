@@ -24,7 +24,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
-import com.example.simplechat.ChatListActivityInstance;
+import com.example.simplechat.P2PManager;
 import com.example.simplechat.data.AppDatabase;
 import com.example.simplechat.data.UserProfileEntity;
 import com.example.simplechat.utils.QRCodeGenerator;
@@ -344,10 +344,9 @@ public class ProfileActivity extends AppCompatActivity {
      * Показать диалог с QR-кодом пользователя
      */
     private void showQRCodeDialog() {
-        // Получаем userId из P2PClient
-        String userId = ChatListActivityInstance.getInstance() != null 
-            ? ChatListActivityInstance.getInstance().getUserId() 
-            : null;
+        // Получаем userId из P2PManager
+        P2PManager p2pManager = P2PManager.getInstance(this);
+        String userId = p2pManager.getUserId();
 
         if (userId == null) {
             Toast.makeText(this, "P2P не подключен", Toast.LENGTH_SHORT).show();

@@ -23,7 +23,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.simplechat.p2p.P2PClient;
+import com.example.simplechat.P2PManager;
 import com.example.simplechat.utils.ContactHelper;
 import com.example.simplechat.data.AppDatabase;
 
@@ -57,7 +57,7 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
     private ImageButton refreshButton;
     private ImageButton backButton;
 
-    private P2PClient p2pClient;
+    private P2PManager p2pManager;
     private AppDatabase database;
     private ExecutorService executorService;
     private Handler handler = new Handler(Looper.getMainLooper());
@@ -69,7 +69,7 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         try {
             setContentView(R.layout.activity_contacts);
             Log.d(TAG, "Layout установлен");
@@ -83,16 +83,14 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
         // Инициализация
         database = AppDatabase.getInstance(this);
         executorService = Executors.newSingleThreadExecutor();
-        
-        // Получаем P2PClient из синглтона
-        p2pClient = ChatListActivityInstance.getInstance();
-        Log.d(TAG, "P2PClient: " + (p2pClient != null ? "OK" : "NULL"));
 
-        // Если P2PClient не инициализирован, показываем ошибку
-        if (p2pClient == null) {
-            Toast.makeText(this, "Сначала откройте главный экран", Toast.LENGTH_LONG).show();
-            finish();
-            return;
+        // Получаем P2PManager из синглтона
+        p2pManager = P2PManager.getInstance(this);
+        Log.d(TAG, "P2PManager: " + (p2pManager != null ? "OK" : "NULL"));
+        
+        // Проверяем подключение
+        if (!p2pManager.isConnected()) {
+            Log.d(TAG, "P2PManager не подключён, пробуем подключиться");
         }
 
         try {
@@ -108,14 +106,10 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
             setupAdapter();
             Log.d(TAG, "Адаптер настроен");
 
-            // Добавляем слушателя P2PClient
-            setupP2PListener();
-            Log.d(TAG, "P2P слушатель настроен");
-
             // Запрос разрешений и синхронизация
             checkPermissionsAndSync();
             Log.d(TAG, "Синхронизация запущена");
-            
+
         } catch (Exception e) {
             Log.e(TAG, "Ошибка инициализации", e);
             Toast.makeText(this, "Ошибка: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -152,83 +146,8 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
     }
 
     private void setupP2PListener() {
-        p2pClient.addEventListener(new P2PClient.P2PEventListener() {
-            @Override
-            public void onContactsSynced(List<JSONObject> matches) {
-                handler.post(() -> {
-                    try {
-                        Log.d(TAG, "📥 Получено совпадений: " + matches.size());
-                        
-                        inAppContacts.clear();
-                        for (JSONObject match : matches) {
-                            ContactAdapter.ContactItem item = ContactAdapter.ContactItem.fromJSON(match);
-                            if (item != null) {
-                                inAppContacts.add(item);
-                                Log.d(TAG, "✅ Контакт в приложении: " + item.name + " (userId: " + item.userId + ")");
-                            }
-                        }
-                        
-                        // Объединяем все контакты с найденными userId
-                        List<ContactAdapter.ContactItem> mergedContacts = mergeContactsWithMatches(allContacts, inAppContacts);
-                        contactAdapter.setContacts(mergedContacts);
-                        updateStats(mergedContacts);
-                        
-                        progressBar.setVisibility(View.GONE);
-                        emptyState.setVisibility(mergedContacts.isEmpty() ? View.VISIBLE : View.GONE);
-                        statusText.setText("Найдено: " + inAppContacts.size() + " в приложении из " + allContacts.size());
-                        
-                        if (inAppContacts.isEmpty()) {
-                            Toast.makeText(ContactsActivity.this, 
-                                "Контакты синхронизированы, но никого из контактов нет в приложении", 
-                                Toast.LENGTH_LONG).show();
-                        } else {
-                            Toast.makeText(ContactsActivity.this, 
-                                "🎉 Найдено " + inAppContacts.size() + " контактов в приложении!", 
-                                Toast.LENGTH_LONG).show();
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Ошибка обработки контактов", e);
-                        Toast.makeText(ContactsActivity.this, "Ошибка: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-
-            @Override
-            public void onPhoneRegistered(String userId, boolean alreadyRegistered) {
-                handler.post(() -> {
-                    if (alreadyRegistered) {
-                        registeredPhoneText.setText("✅ Номер уже привязан");
-                        registeredPhoneText.setVisibility(View.VISIBLE);
-                        registerPhoneButton.setEnabled(false);
-                    } else {
-                        registeredPhoneText.setText("✅ Номер привязан");
-                        registeredPhoneText.setVisibility(View.VISIBLE);
-                        registerPhoneButton.setEnabled(true);
-                    }
-                    isRegistered = true;
-                    Toast.makeText(ContactsActivity.this, "Номер привязан", Toast.LENGTH_SHORT).show();
-                });
-            }
-
-            @Override
-            public void onError(String error) {
-                handler.post(() -> {
-                    Toast.makeText(ContactsActivity.this, "Ошибка: " + error, Toast.LENGTH_SHORT).show();
-                    progressBar.setVisibility(View.GONE);
-                    statusText.setText("Ошибка синхронизации");
-                });
-            }
-
-            @Override public void onConnected(String userId) {}
-            @Override public void onDisconnected() {}
-            @Override public void onMessageReceived(String from, JSONObject payload) {}
-            @Override public void onUserFound(String userId, boolean online) {}
-            @Override public void onTyping(String from) {}
-            @Override public void onMessageDelivered(String to, String messageId) {}
-            @Override public void onWebRTCOffer(String from, JSONObject payload) {}
-            @Override public void onWebRTCAnswer(String from, JSONObject payload) {}
-            @Override public void onWebRTCIceCandidate(String from, JSONObject payload) {}
-        });
+        // P2PManager сам управляет подключением, нам нужно только вызвать синхронизацию
+        // Слушатель уже зарегистрирован в P2PManager
     }
 
     /**
@@ -326,8 +245,8 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
                     statusText.setText("Отправка на сервер...");
                 });
 
-                if (p2pClient != null && p2pClient.isConnected()) {
-                    p2pClient.syncContacts(contacts);
+                if (p2pManager != null && p2pManager.isConnected()) {
+                    p2pManager.syncContacts(contacts);
                 } else {
                     handler.post(() -> {
                         progressBar.setVisibility(View.GONE);
@@ -356,8 +275,8 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
 
         builder.setPositiveButton("Привязать", (dialog, which) -> {
             String phone = input.getText().toString().trim();
-            if (!phone.isEmpty() && p2pClient != null) {
-                p2pClient.registerPhone(phone);
+            if (!phone.isEmpty() && p2pManager != null) {
+                p2pManager.registerPhone(phone);
             } else {
                 Toast.makeText(this, "Введите номер", Toast.LENGTH_SHORT).show();
             }

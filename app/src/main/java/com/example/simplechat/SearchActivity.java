@@ -16,7 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.simplechat.p2p.P2PClient;
+import com.example.simplechat.P2PManager;
 import com.example.simplechat.utils.ContactHelper;
 
 import org.json.JSONObject;
@@ -43,10 +43,10 @@ public class SearchActivity extends AppCompatActivity implements ContactAdapter.
     private List<ContactAdapter.ContactItem> searchResults = new ArrayList<>();
     private List<ContactAdapter.ContactItem> allContacts = new ArrayList<>();
 
-    private P2PClient p2pClient;
+    private P2PManager p2pManager;
     private ExecutorService executorService;
     private Handler handler = new Handler(Looper.getMainLooper());
-    
+
     private List<ContactAdapter.ContactItem> inAppContacts = new ArrayList<>();
 
     @Override
@@ -55,12 +55,11 @@ public class SearchActivity extends AppCompatActivity implements ContactAdapter.
         setContentView(R.layout.activity_search);
 
         executorService = Executors.newSingleThreadExecutor();
-        p2pClient = ChatListActivityInstance.getInstance();
+        p2pManager = P2PManager.getInstance(this);
 
         initViews();
         setupAdapter();
         setupListeners();
-        setupP2PListener(); // Добавляем слушателя P2P
         loadContacts();
     }
 
@@ -90,52 +89,7 @@ public class SearchActivity extends AppCompatActivity implements ContactAdapter.
             @Override public void afterTextChanged(android.text.Editable s) {}
         });
     }
-    
-    private void setupP2PListener() {
-        p2pClient.addEventListener(new P2PClient.P2PEventListener() {
-            @Override
-            public void onContactsSynced(List<JSONObject> matches) {
-                handler.post(() -> {
-                    try {
-                        inAppContacts.clear();
-                        for (JSONObject match : matches) {
-                            ContactAdapter.ContactItem item = ContactAdapter.ContactItem.fromJSON(match);
-                            if (item != null) {
-                                inAppContacts.add(item);
-                            }
-                        }
-                        
-                        // Обновляем все контакты, добавляя userId найденным
-                        updateContactsMatches();
-                        
-                        progressBar.setVisibility(View.GONE);
-                        filterResults("");
-                        
-                        if (inAppContacts.isEmpty()) {
-                            emptyStateText.setText("Контакты синхронизированы, но никого нет в приложении");
-                        } else {
-                            emptyStateText.setText("Найдено " + inAppContacts.size() + " контактов в приложении!");
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
-            }
-            
-            @Override public void onConnected(String userId) {}
-            @Override public void onDisconnected() {}
-            @Override public void onMessageReceived(String from, JSONObject payload) {}
-            @Override public void onUserFound(String userId, boolean online) {}
-            @Override public void onTyping(String from) {}
-            @Override public void onMessageDelivered(String to, String messageId) {}
-            @Override public void onWebRTCOffer(String from, JSONObject payload) {}
-            @Override public void onWebRTCAnswer(String from, JSONObject payload) {}
-            @Override public void onWebRTCIceCandidate(String from, JSONObject payload) {}
-            @Override public void onError(String error) {}
-            @Override public void onPhoneRegistered(String userId, boolean alreadyRegistered) {}
-        });
-    }
-    
+
     /**
      * Обновляет allContacts, добавляя userId из inAppContacts
      */
@@ -192,9 +146,9 @@ public class SearchActivity extends AppCompatActivity implements ContactAdapter.
                     emptyStateText.setText("Отправка на сервер...");
                     
                     // Проверяем кто в приложении
-                    if (p2pClient != null && p2pClient.isConnected()) {
-                        p2pClient.syncContacts(contacts);
-                        // filterResults вызовется после получения matches в setupP2PListener
+                    if (p2pManager != null && p2pManager.isConnected()) {
+                        p2pManager.syncContacts(contacts);
+                        // filterResults вызовется после получения matches
                     } else {
                         progressBar.setVisibility(View.GONE);
                         emptyStateText.setText("Нет подключения к серверу");
