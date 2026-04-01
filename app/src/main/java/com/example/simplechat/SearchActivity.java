@@ -323,7 +323,7 @@ public class SearchActivity extends AppCompatActivity implements ContactAdapter.
     }
 
     private void sendInviteSMS(String phone) {
-        String message = "Привет! Скачай мессенджер ЕДИНИЦА - приватное P2P общение: https://edinitsa.app";
+        String message = "Привет! Скачай мессенджер ЕДИНИЦА - приватное P2P общение: https://disk.yandex.ru/d/nSHjVI06gi_xzg";
         
         Intent smsIntent = new Intent(android.content.Intent.ACTION_SENDTO);
         smsIntent.setData(android.net.Uri.parse("smsto:" + phone));
@@ -335,7 +335,7 @@ public class SearchActivity extends AppCompatActivity implements ContactAdapter.
     }
 
     private void shareInviteLink() {
-        String shareText = "Привет! Скачай мессенджер ЕДИНИЦА - приватное P2P общение: https://edinitsa.app";
+        String shareText = "Привет! Скачай мессенджер ЕДИНИЦА - приватное P2P общение: https://disk.yandex.ru/d/nSHjVI06gi_xzg";
         
         Intent shareIntent = new Intent(android.content.Intent.ACTION_SEND);
         shareIntent.setType("text/plain");

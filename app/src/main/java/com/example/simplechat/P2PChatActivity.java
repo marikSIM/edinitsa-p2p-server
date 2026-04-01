@@ -1,14 +1,20 @@
 package com.example.simplechat;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Base64;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -18,6 +24,9 @@ import com.example.simplechat.p2p.P2PClient;
 
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -73,6 +82,12 @@ public class P2PChatActivity extends AppCompatActivity implements P2PClient.P2PE
         backButton.setOnClickListener(v -> finish());
 
         sendButton.setOnClickListener(v -> sendMessage());
+        
+        // Кнопка отправки фото
+        ImageButton attachButton = findViewById(R.id.attachButton);
+        if (attachButton != null) {
+            attachButton.setOnClickListener(v -> openGallery());
+        }
 
         // Инициализация P2P клиента
         initP2PClient();
@@ -159,22 +174,53 @@ public class P2PChatActivity extends AppCompatActivity implements P2PClient.P2PE
     public void onMessageReceived(String from, JSONObject payload) {
         if (from.equals(friendUserId)) {
             try {
-                String text = payload.getString("text");
-                Message message = new Message(text, false);
+                String type = payload.optString("type", "text");
+                
+                if ("photo".equals(type)) {
+                    // Получили фото
+                    String base64 = payload.getString("data");
+                    byte[] imageBytes = Base64.decode(base64, Base64.DEFAULT);
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                    
+                    // Сохраняем в файл
+                    File photoFile = new File(getFilesDir(), "received_photos/" + System.currentTimeMillis() + ".jpg");
+                    photoFile.getParentFile().mkdirs();
+                    FileOutputStream outputStream = new FileOutputStream(photoFile);
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+                    outputStream.close();
+                    
+                    Message message = new Message("📷 Фото", false);
+                    if (chatId > 0) {
+                        executorService.execute(() -> {
+                            MessageEntity entity = message.toEntity(chatId, photoFile.getAbsolutePath(), MessageEntity.MediaType.IMAGE);
+                            database.messageDao().insert(entity);
+                            database.chatDao().updateLastMessage(chatId, "📷 Фото", System.currentTimeMillis());
+                        });
+                    }
+                    
+                    handler.post(() -> {
+                        messageAdapter.addMessage(message);
+                        messagesRecyclerView.scrollToPosition(messageList.size() - 1);
+                    });
+                } else {
+                    // Текстовое сообщение
+                    String text = payload.getString("text");
+                    Message message = new Message(text, false);
 
-                if (chatId > 0) {
-                    executorService.execute(() -> {
-                        MessageEntity entity = message.toEntity(chatId);
-                        database.messageDao().insert(entity);
-                        database.chatDao().updateLastMessage(chatId, text, System.currentTimeMillis());
+                    if (chatId > 0) {
+                        executorService.execute(() -> {
+                            MessageEntity entity = message.toEntity(chatId);
+                            database.messageDao().insert(entity);
+                            database.chatDao().updateLastMessage(chatId, text, System.currentTimeMillis());
+                        });
+                    }
+
+                    handler.post(() -> {
+                        messageAdapter.addMessage(message);
+                        messagesRecyclerView.scrollToPosition(messageList.size() - 1);
+                        Toast.makeText(this, "Сообщение от " + from.substring(0, 8), Toast.LENGTH_SHORT).show();
                     });
                 }
-
-                handler.post(() -> {
-                    messageAdapter.addMessage(message);
-                    messagesRecyclerView.scrollToPosition(messageList.size() - 1);
-                    Toast.makeText(this, "Сообщение от " + from.substring(0, 8), Toast.LENGTH_SHORT).show();
-                });
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -216,6 +262,70 @@ public class P2PChatActivity extends AppCompatActivity implements P2PClient.P2PE
     @Override
     public void onPhoneRegistered(String userId, boolean alreadyRegistered) {
         // Не используется в этой Activity
+    }
+
+    private static final int PERMISSION_REQUEST_CODE = 100;
+    private static final int REQUEST_IMAGE_PICK = 101;
+
+    private final ActivityResultLauncher<String> imagePickerLauncher = registerForActivityResult(
+        new ActivityResultContracts.GetContent(),
+        uri -> {
+            if (uri != null) {
+                sendPhoto(uri);
+            }
+        }
+    );
+
+    private void openGallery() {
+        imagePickerLauncher.launch("image/*");
+    }
+
+    private void sendPhoto(Uri uri) {
+        if (friendUserId == null || p2pClient == null || !p2pClient.isConnected()) {
+            Toast.makeText(this, "Нет соединения с сервером", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        executorService.execute(() -> {
+            try {
+                // Сжимаем фото
+                Bitmap bitmap = BitmapFactory.decodeStream(getContentResolver().openInputStream(uri));
+                Bitmap compressed = Bitmap.createScaledBitmap(bitmap, 800, 600, true);
+
+                // Конвертируем в Base64
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                compressed.compress(Bitmap.CompressFormat.JPEG, 60, stream);
+                byte[] imageBytes = stream.toByteArray();
+                String base64 = Base64.encodeToString(imageBytes, Base64.DEFAULT);
+
+                // Отправляем через сервер
+                JSONObject payload = new JSONObject();
+                payload.put("type", "photo");
+                payload.put("data", base64);
+                payload.put("timestamp", System.currentTimeMillis());
+
+                p2pClient.sendMessage(friendUserId, payload);
+
+                // Сохраняем локально
+                Message message = new Message("📷 Фото", true);
+                if (chatId > 0) {
+                    executorService.execute(() -> {
+                        MessageEntity entity = message.toEntity(chatId);
+                        database.messageDao().insert(entity);
+                        database.chatDao().updateLastMessage(chatId, "📷 Фото", System.currentTimeMillis());
+                    });
+                }
+
+                handler.post(() -> {
+                    messageAdapter.addMessage(message);
+                    messagesRecyclerView.scrollToPosition(messageList.size() - 1);
+                });
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                handler.post(() -> Toast.makeText(this, "Ошибка отправки фото: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+        });
     }
 
     @Override

@@ -465,7 +465,7 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
     }
 
     private void sendInviteSMS(String phone) {
-        String message = "Привет! Скачай мессенджер ЕДИНИЦА - приватное P2P общение без серверов: https://edinitsa.app";
+        String message = "Привет! Скачай мессенджер ЕДИНИЦА - приватное P2P общение без серверов: https://disk.yandex.ru/d/nSHjVI06gi_xzg";
         
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -485,7 +485,7 @@ public class ContactsActivity extends AppCompatActivity implements ContactAdapte
     }
 
     private void shareInviteLink() {
-        String shareText = "Привет! Скачай мессенджер ЕДИНИЦА - приватное P2P общение без серверов: https://edinitsa.app";
+        String shareText = "Привет! Скачай мессенджер ЕДИНИЦА - приватное P2P общение без серверов: https://disk.yandex.ru/d/nSHjVI06gi_xzg";
         
         Intent shareIntent = new Intent(android.content.Intent.ACTION_SEND);
         shareIntent.setType("text/plain");

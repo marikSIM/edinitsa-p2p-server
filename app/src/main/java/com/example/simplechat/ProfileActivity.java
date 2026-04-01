@@ -394,8 +394,8 @@ public class ProfileActivity extends AppCompatActivity {
      * Поделиться userId
      */
     private void shareUserId(String userId) {
-        String shareText = "Добавь меня в ЕДИНИЦЕ! Мой ID: " + userId + 
-            "\n\nСкачай приложение: https://edinitsa.app";
+        String shareText = "Добавь меня в ЕДИНИЦЕ! Мой ID: " + userId +
+            "\n\nСкачай приложение: https://disk.yandex.ru/d/nSHjVI06gi_xzg";
         
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
         shareIntent.setType("text/plain");
