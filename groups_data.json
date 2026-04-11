@@ -1,0 +1,52 @@
+{
+  "e7d1f545-b235-4c08-a141-5a36730b73d3": {
+    "name": "Ручеёк лесная сказка",
+    "description": "",
+    "avatar": "👥",
+    "createdBy": "7370ea95-03ee-42c4-92cb-890d91ea83f7",
+    "members": [
+      "6c3d16e6-563f-453b-8561-5ce55a1e9130"
+    ],
+    "createdAt": 1775542028787
+  },
+  "a9dfdf50-78a3-4446-aed0-779d1e36b1e7": {
+    "name": "Ручеёк лесная сказка",
+    "description": "",
+    "avatar": "👥",
+    "createdBy": "3a9c1139-8e24-4773-aea3-8f8a26a3e1db",
+    "members": [
+      "6c3d16e6-563f-453b-8561-5ce55a1e9130"
+    ],
+    "createdAt": 1775558132812
+  },
+  "d28a096a-c7ba-4072-ae3c-ea5174df381d": {
+    "name": "Тест",
+    "description": "",
+    "avatar": "👥",
+    "createdBy": "test123",
+    "members": [
+      "test123"
+    ],
+    "createdAt": 1775899276595
+  },
+  "8956e2c0-1ceb-49bf-a18a-4515c25349f2": {
+    "name": "Grp1",
+    "description": "",
+    "avatar": "👥",
+    "createdBy": "test",
+    "members": [
+      "test"
+    ],
+    "createdAt": 1775900058055
+  },
+  "61d172b2-c111-47a1-b427-a79a226f13a3": {
+    "name": "Тест",
+    "description": "",
+    "avatar": "👥",
+    "createdBy": "a1",
+    "members": [
+      "a1"
+    ],
+    "createdAt": 1775900173127
+  }
+}

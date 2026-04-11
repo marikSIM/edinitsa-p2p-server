@@ -1,6 +1,8 @@
 {
-  "version_code": 3,
-  "version_name": "1.2",
-  "message": "🆕 Новая версия!\n\nИзменения:\n• Исправлена синхронизация контактов\n• Теперь пользователи могут находить друг друга по номеру телефона\n• Автоматическая загрузка и установка обновлений\n• Улучшена стабильность P2P соединения",
-  "download_url": "https://github.com/marikSIM/edinitsa-p2p-server/releases/download/v1.2/app-debug.apk"
+    "versionCode": 57,
+    "versionName": "3.20.4",
+    "message": "🆕 Версия 3.20.4 — Стабильная\n\n🔔 PushForegroundService 24/7:\n• ✅ WebSocket соединение в фоне\n• ✅ Системные уведомления\n• ✅ Авто-реконнект при смене сети\n\n👥 Группы:\n• ✅ Создание, отправка, получение\n• ✅ Текст/фото/голосовые\n\n🎤 Голосовые сообщения\n🐛 Исправлено 7 критических багов",
+    "sha256": "8d808a126d121e42dc9d7e82e6e7e43c53c1af7ff08d2e9b75fbcdbe76a865a6",
+    "download_url": "http://edinitsa.tplinkdns.com:3001/updates/app-release.apk",
+    "release_date": "2026-04-07"
 }
