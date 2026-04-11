@@ -338,7 +338,11 @@ app.post('/find-user', (req, res) => {
 // Отправка сообщения
 app.post('/send', (req, res) => {
   const { fromId, to, payload } = req.body;
-  
+
+  if (!fromId || !to) {
+    return res.status(400).json({ error: 'Missing required fields: fromId, to' });
+  }
+
   // ⚠️ ПРОВЕРКА АВТОРИЗАЦИИ для продакшена
   // Если токен есть в заголовке, проверяем что fromId совпадает с userId из токена
   if (req.authUserId && req.authUserId !== fromId) {
@@ -350,7 +354,9 @@ app.post('/send', (req, res) => {
 
   const target = users.get(to);
   const isOnline = target && target.online && (Date.now() - target.lastSeen < 30000);
-  
+
+  const messagePayload = payload || {};
+
   if (isOnline) {
     // Получатель онлайн - сохраняем в очередь для получения
     if (!offlineQueue.has(to)) {
@@ -359,16 +365,16 @@ app.post('/send', (req, res) => {
     offlineQueue.get(to).push({
       type: 'message',
       from: fromId,
-      payload: payload,
+      payload: messagePayload,
       timestamp: Date.now()
     });
-    
-    console.log(`📨 Сообщение от ${fromId} к ${to} (ожидает получения)`);
-    
+
+    console.log(`📨 Сообщение от ${fromId?.substring(0, 8)} к ${to?.substring(0, 8)} (ожидает получения)`);
+
     res.json({
       type: 'message-sent',
       to: to,
-      messageId: payload.id,
+      messageId: messagePayload.id || null,
       delivered: false,
       queued: true
     });
@@ -380,16 +386,16 @@ app.post('/send', (req, res) => {
     offlineQueue.get(to).push({
       type: 'message',
       from: fromId,
-      payload: payload,
+      payload: messagePayload,
       timestamp: Date.now()
     });
-    
-    console.log(`💾 Сообщение сохранено в очереди для ${to}`);
-    
+
+    console.log(`💾 Сообщение сохранено в очереди для ${to?.substring(0, 8)}`);
+
     res.json({
       type: 'message-sent',
       to: to,
-      messageId: payload.id,
+      messageId: messagePayload.id || null,
       delivered: false,
       queued: true
     });
